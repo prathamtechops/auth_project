@@ -3,6 +3,7 @@
 import { login } from "@/lib/action/auth.action";
 import { loginSchema } from "@/lib/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -16,6 +17,11 @@ import PasswordInput from "./PasswordInput";
 function LoginForm() {
   const [type, setType] = useState<"error" | "success" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const urlError =
+    searchParams.get("error") === "OAuthAccountNotLinked"
+      ? "Email already in use with a different provider"
+      : null;
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -70,7 +76,7 @@ function LoginForm() {
             form={form}
             disable={form.formState.isSubmitting}
           />
-          <FormMessage message={message} type={type} />
+          <FormMessage message={message || urlError} type={type} />
           <Button
             isLoading={form.formState.isSubmitting}
             type="submit"

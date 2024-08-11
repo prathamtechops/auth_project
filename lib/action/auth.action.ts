@@ -1,6 +1,9 @@
 "use server";
 
+import { signIn } from "@/auth";
+import { DEFAULT_LOGIN_ROUTE } from "@/routes";
 import bcrypt from "bcryptjs";
+import { AuthError } from "next-auth";
 import { z } from "zod";
 import { db } from "../db";
 import { loginSchema, registerSchema } from "../schema";
@@ -14,10 +17,26 @@ export const login = async (values: z.infer<typeof loginSchema>) => {
       throw new Error("Invalid email or password");
     }
 
+    const { email, password } = validatedFields.data;
+
+    await signIn("credentials", {
+      email,
+      password,
+      redirectTo: DEFAULT_LOGIN_ROUTE,
+    });
+
     return { success: "Email Sent" };
   } catch (error) {
-    console.error(error);
-    throw new Error(error instanceof Error ? error.message : "Unknown error");
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin":
+          throw new Error("Invalid email or password");
+        default:
+          throw new Error("Unknown error");
+      }
+    }
+
+    throw error;
   }
 };
 export const register = async (values: z.infer<typeof registerSchema>) => {
@@ -50,7 +69,7 @@ export const register = async (values: z.infer<typeof registerSchema>) => {
 
     return { success: "Email Sent" };
   } catch (error) {
-    console.error(error);
-    throw new Error(error instanceof Error ? error.message : "Unknown error");
+    // console.error(error);
+    // throw new Error(error instanceof Error ? error.message : "Unknown error");
   }
 };

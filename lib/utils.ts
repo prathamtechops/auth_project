@@ -23,3 +23,50 @@ export const getUserById = async (id: string) => {
     return null;
   }
 };
+
+export const getVerificationTokenByEmail = async (email: string) => {
+  try {
+    const verificationToken = await db.verificationToken.findFirst({
+      where: { email },
+    });
+
+    return verificationToken;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const getVerificationTokenByToken = async (token: string) => {
+  try {
+    const verificationToken = await db.verificationToken.findUnique({
+      where: { token },
+    });
+
+    return verificationToken;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const generateVerificationToken = async (email: string) => {
+  try {
+    const token = crypto.randomUUID();
+
+    const expires = new Date(new Date().getTime() + 15 * 60 * 1000);
+
+    const existingToken = await getVerificationTokenByEmail(email);
+
+    if (existingToken) {
+      await db.verificationToken.delete({
+        where: { id: existingToken.id },
+      });
+    }
+    const newToken = await db.verificationToken.create({
+      data: { expires, token, email },
+    });
+
+    return newToken;
+  } catch (error) {
+    return null;
+  }
+};
