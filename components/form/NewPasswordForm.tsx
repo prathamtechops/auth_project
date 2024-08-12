@@ -1,10 +1,8 @@
 "use client";
 
-import { login } from "@/lib/action/auth.action";
-import { loginSchema } from "@/lib/schema";
+import { newPassword } from "@/lib/action/auth.action";
+import { newPasswordSchema } from "@/lib/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -12,32 +10,31 @@ import { CardWrapper } from "../CardWrapper";
 import { Button } from "../ui/button";
 import { Form } from "../ui/form";
 import FormMessage from "./FormMessage";
-import InputField from "./InputField";
 import PasswordInput from "./PasswordInput";
 
-function LoginForm() {
+function NewPasswordForm({ token }: { token?: string }) {
   const [type, setType] = useState<"error" | "success" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const searchParams = useSearchParams();
-  const urlError =
-    searchParams.get("error") === "OAuthAccountNotLinked"
-      ? "Email already in use with a different provider"
-      : null;
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof newPasswordSchema>>({
+    resolver: zodResolver(newPasswordSchema),
     defaultValues: {
-      email: "",
       password: "",
     },
   });
 
-  async function onSubmit(values: z.infer<typeof loginSchema>) {
+  async function onSubmit(values: z.infer<typeof newPasswordSchema>) {
     setMessage(null);
     setType(null);
 
+    if (!token) {
+      setMessage("Invalid token");
+      setType("error");
+      return;
+    }
+
     try {
-      const res = await login(values);
+      const res = await newPassword(values, token);
 
       if (res?.success) {
         setType("success");
@@ -53,42 +50,29 @@ function LoginForm() {
 
   return (
     <CardWrapper
-      headerTitle="Login"
-      headerLable="Sign in to your account"
-      backButtonLabel="Don't have an account?"
-      backButtonHref="/auth/register"
-      showSocialLinks={true}
+      headerTitle="New Password"
+      headerLable="Enter your new password"
+      backButtonLabel="Back to Login"
+      backButtonHref="/auth/login"
+      showSocialLinks={false}
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <InputField
-            name="email"
-            label="Email"
-            placeholder="Email"
-            type="email"
-            form={form}
-            disable={form.formState.isSubmitting}
-          />
-
           <PasswordInput
             name="password"
             label="Password"
-            placeholder="Password"
+            placeholder="******"
             form={form}
             disable={form.formState.isSubmitting}
           />
 
-          <Button size="sm" variant="link">
-            <Link href="/auth/reset">Forgot Password?</Link>
-          </Button>
-
-          <FormMessage message={message || urlError} type={type} />
+          <FormMessage message={message} type={type} />
           <Button
             isLoading={form.formState.isSubmitting}
             type="submit"
             className="w-full"
           >
-            Login
+            Reset Password
           </Button>
         </form>
       </Form>
@@ -96,4 +80,4 @@ function LoginForm() {
   );
 }
 
-export default LoginForm;
+export default NewPasswordForm;

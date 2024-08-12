@@ -70,3 +70,50 @@ export const generateVerificationToken = async (email: string) => {
     return null;
   }
 };
+
+export const getPasswordResetTokenByEmail = async (email: string) => {
+  try {
+    const passwordResetToken = await db.passwordResetToken.findFirst({
+      where: { email },
+    });
+
+    return passwordResetToken;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const getPasswordResetTokenByToken = async (token: string) => {
+  try {
+    const passwordResetToken = await db.passwordResetToken.findUnique({
+      where: { token },
+    });
+
+    return passwordResetToken;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const generatePasswordResetToken = async (email: string) => {
+  try {
+    const token = crypto.randomUUID();
+
+    const expires = new Date(new Date().getTime() + 15 * 60 * 1000);
+
+    const existingToken = await getPasswordResetTokenByEmail(email);
+
+    if (existingToken) {
+      await db.passwordResetToken.delete({
+        where: { id: existingToken.id },
+      });
+    }
+    const newToken = await db.passwordResetToken.create({
+      data: { expires, token, email },
+    });
+
+    return newToken;
+  } catch (error) {
+    return null;
+  }
+};

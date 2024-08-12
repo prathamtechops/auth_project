@@ -72,8 +72,17 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        bounceColor: {
+          "0%, 100%": {
+            transform: "translateY(0)",
+            backgroundColor: "#9CA3AF",
+          }, // neutral-400
+          "50%": { transform: "translateY(-25%)", backgroundColor: "#F87171" }, // red-400
+        },
       },
+
       animation: {
+        bounceColor: "bounceColor 1s infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },

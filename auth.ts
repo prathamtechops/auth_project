@@ -25,10 +25,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (!token.sub) return token;
 
       const user = await getUserById(token.sub);
-
       if (!user) return token;
-
       token.role = user.role;
+
       return token;
     },
     async session({ session, token }) {
@@ -39,14 +38,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
 
-    async signIn({ user }) {
-      // if (user.id) {
-      //   const existingUser = await getUserById(user.id);
+    async signIn({ user, account }) {
+      if (user.id) {
+        if (account?.provider !== "credentials") return true;
 
-      //   if (!existingUser || !existingUser.emailVerified) {
-      //     return false;
-      //   }
-      // }
+        const existingUser = await getUserById(user.id);
+
+        if (!existingUser || !existingUser.emailVerified) {
+          return false;
+        }
+      }
 
       return true;
     },
