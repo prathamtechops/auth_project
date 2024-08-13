@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
+import crypto from "crypto";
 import { twMerge } from "tailwind-merge";
 import { db } from "./db";
 
@@ -109,6 +110,65 @@ export const generatePasswordResetToken = async (email: string) => {
       });
     }
     const newToken = await db.passwordResetToken.create({
+      data: { expires, token, email },
+    });
+
+    return newToken;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const getTwoFactorTokenByToken = async (token: string) => {
+  try {
+    const twoFactorToken = await db.twoFactorToken.findUnique({
+      where: { token },
+    });
+
+    return twoFactorToken;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const getTwoFactorTokenByEmail = async (email: string) => {
+  try {
+    const twoFactorToken = await db.twoFactorToken.findFirst({
+      where: { email },
+    });
+
+    return twoFactorToken;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const getTwoFactorConfirmationByUserId = async (userId: string) => {
+  try {
+    const twoFactorConfirmation = await db.twoFactorConfirmation.findFirst({
+      where: { userId },
+    });
+
+    return twoFactorConfirmation;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const generateTwoFactorToken = async (email: string) => {
+  try {
+    const token = crypto.randomInt(100000, 1000000).toString();
+
+    const expires = new Date(new Date().getTime() + 15 * 60 * 1000);
+
+    const existingToken = await getTwoFactorTokenByEmail(email);
+
+    if (existingToken) {
+      await db.twoFactorToken.delete({
+        where: { id: existingToken.id },
+      });
+    }
+    const newToken = await db.twoFactorToken.create({
       data: { expires, token, email },
     });
 

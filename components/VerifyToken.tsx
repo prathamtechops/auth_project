@@ -1,37 +1,19 @@
-"use client";
-
 import { verifyToken } from "@/lib/action/auth.action";
-import { useCallback, useEffect, useState } from "react";
+
 import FormMessage from "./form/FormMessage";
 
-export const VerifyToken = ({ token }: { token: string | undefined }) => {
-  const [message, setMessage] = useState<string | null>(null);
-  const [type, setType] = useState<"error" | "success" | null>(null);
-
-  const verify = useCallback(async () => {
-    if (message && type) return;
-
-    if (token === undefined) {
-      setMessage("Token is Missing");
-      setType("error");
-      return;
-    }
-    try {
-      const res = await verifyToken(token);
-
-      if (res.success) {
-        setMessage(res.success);
-        setType("success");
-      }
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unknown error");
-      setType("error");
-    }
-  }, [token]);
-
-  useEffect(() => {
-    verify();
-  }, [verify]);
+export const VerifyToken = async ({ token }: { token: string | undefined }) => {
+  let res = null;
+  let message = null;
+  let type: "success" | "error" | null = null;
+  if (token) {
+    res = await verifyToken(token);
+    message = res?.message;
+    type = res?.success ? "success" : "error";
+  } else {
+    message = "Invalid token";
+    type = "error";
+  }
 
   if (message && type) return <FormMessage type={type} message={message} />;
 

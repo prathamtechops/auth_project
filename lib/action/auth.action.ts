@@ -127,13 +127,13 @@ export const verifyToken = async (token: string) => {
     const hasExpired = new Date() > new Date(existingToken.expires);
 
     if (hasExpired) {
-      throw new Error("Token has expired");
+      return { message: "Token has expired", success: false };
     }
 
     const user = await getUserByEmail(existingToken.email);
 
     if (!user) {
-      throw new Error("Email not found");
+      return { message: "User not found", success: false };
     }
 
     await db.user.update({
@@ -152,7 +152,7 @@ export const verifyToken = async (token: string) => {
       },
     });
 
-    return { success: "Email Verified" };
+    return { message: "Email verified", success: true };
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Unknown error");
   }
