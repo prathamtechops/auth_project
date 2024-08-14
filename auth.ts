@@ -3,7 +3,7 @@ import { UserRole } from "@prisma/client";
 import NextAuth from "next-auth";
 import authConfig from "./auth.config";
 import { db } from "./lib/db";
-import { getUserById } from "./lib/utils";
+import { getTwoFactorConfirmationByUserId, getUserById } from "./lib/utils";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
@@ -27,6 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const user = await getUserById(token.sub);
       if (!user) return token;
       token.role = user.role;
+      token.isTwoFactorEnabled = user.isTwoFactorEnabled;
 
       return token;
     },
@@ -34,6 +35,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user && token.sub) session.user.id = token.sub;
       if (token.role && session.user)
         session.user.role = token.role as UserRole;
+      if (session.user)
+        session.user.isTwoFactorEnabled = token.isTwoFactorEnabled as boolean;
 
       return session;
     },
@@ -46,6 +49,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!existingUser || !existingUser.emailVerified) {
           return false;
+        }
+
+        if (existingUser.isTwoFactorEnabled) {
+          const twoFactorConfirmation = await getTwoFactorConfirmationByUserId(
+            user.id
+          );
+
+          if (!twoFactorConfirmation) {
+            return false;
+          }
+
+          await db.twoFactorConfirmation.delete({
+            where: { id: twoFactorConfirmation.id },
+          });
         }
       }
 

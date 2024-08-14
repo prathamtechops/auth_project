@@ -13,10 +13,12 @@ import { Button } from "../ui/button";
 import { Form } from "../ui/form";
 import FormMessage from "./FormMessage";
 import InputField from "./InputField";
+import OTPInput from "./OTPInput";
 import PasswordInput from "./PasswordInput";
 
 function LoginForm() {
   const [type, setType] = useState<"error" | "success" | null>(null);
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const urlError =
@@ -39,12 +41,18 @@ function LoginForm() {
     try {
       const res = await login(values);
 
+      if (res?.twoFactor) {
+        setShowTwoFactor(true);
+        setType("success");
+        setMessage(res?.success);
+        return
+      }
+      
       if (res?.success) {
         setType("success");
         setMessage(res?.success);
+        form.reset();
       }
-
-      form.reset();
     } catch (error) {
       setType("error");
       setMessage(error instanceof Error ? error.message : "Unknown error");
@@ -61,22 +69,36 @@ function LoginForm() {
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <InputField
-            name="email"
-            label="Email"
-            placeholder="Email"
-            type="email"
-            form={form}
-            disable={form.formState.isSubmitting}
-          />
+          {!showTwoFactor && (
+            <>
+              <InputField
+                name="email"
+                label="Email"
+                placeholder="Email"
+                type="email"
+                form={form}
+                disable={form.formState.isSubmitting}
+              />
+              <PasswordInput
+                name="password"
+                label="Password"
+                placeholder="Password"
+                form={form}
+                disable={form.formState.isSubmitting}
+              />
+            </>
+          )}
 
-          <PasswordInput
-            name="password"
-            label="Password"
-            placeholder="Password"
-            form={form}
-            disable={form.formState.isSubmitting}
-          />
+          {showTwoFactor && (
+            <OTPInput
+              name="code"
+              form={form}
+              label="Enter OTP"
+              maxLenght={6}
+              description="Enter the code sent to your email"
+              disable={form.formState.isSubmitting}
+            />
+          )}
 
           <Button size="sm" variant="link">
             <Link href="/auth/reset">Forgot Password?</Link>

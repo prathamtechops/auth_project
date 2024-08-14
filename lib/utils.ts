@@ -159,7 +159,7 @@ export const generateTwoFactorToken = async (email: string) => {
   try {
     const token = crypto.randomInt(100000, 1000000).toString();
 
-    const expires = new Date(new Date().getTime() + 15 * 60 * 1000);
+    const expires = new Date(new Date().getTime() + 5 * 60 * 1000); // 5 minutes
 
     const existingToken = await getTwoFactorTokenByEmail(email);
 
@@ -174,6 +174,7 @@ export const generateTwoFactorToken = async (email: string) => {
 
     return newToken;
   } catch (error) {
+    console.log(error);
     return null;
   }
 };
