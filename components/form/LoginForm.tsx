@@ -21,6 +21,8 @@ function LoginForm() {
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const callback = searchParams.get("callback");
+
   const urlError =
     searchParams.get("error") === "OAuthAccountNotLinked"
       ? "Email already in use with a different provider"
@@ -39,15 +41,15 @@ function LoginForm() {
     setType(null);
 
     try {
-      const res = await login(values);
+      const res = await login(values, callback);
 
       if (res?.twoFactor) {
         setShowTwoFactor(true);
         setType("success");
         setMessage(res?.success);
-        return
+        return;
       }
-      
+
       if (res?.success) {
         setType("success");
         setMessage(res?.success);

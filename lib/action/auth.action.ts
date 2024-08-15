@@ -2,10 +2,13 @@
 
 import { signIn, signOut } from "@/auth";
 import { DEFAULT_LOGIN_ROUTE } from "@/routes";
+import { UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "../db";
+import getUser from "../getCurrentUser";
 import {
   sendPasswordResetEmail,
   sendTwoFactorTokenEmail,
@@ -16,6 +19,7 @@ import {
   newPasswordSchema,
   registerSchema,
   resetSchema,
+  settingsSchema,
 } from "../schema";
 import {
   generatePasswordResetToken,
@@ -25,10 +29,14 @@ import {
   getTwoFactorConfirmationByUserId,
   getTwoFactorTokenByEmail,
   getUserByEmail,
+  getUserById,
   getVerificationTokenByToken,
 } from "../utils";
 
-export const login = async (values: z.infer<typeof loginSchema>) => {
+export const login = async (
+  values: z.infer<typeof loginSchema>,
+  callback?: string | null
+) => {
   try {
     const validatedFields = loginSchema.safeParse(values);
 
@@ -116,7 +124,7 @@ export const login = async (values: z.infer<typeof loginSchema>) => {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: DEFAULT_LOGIN_ROUTE,
+      redirectTo: callback || DEFAULT_LOGIN_ROUTE,
     });
 
     return { success: "Login successful" };
@@ -313,4 +321,112 @@ export const logout = async () => {
   await signOut({
     redirectTo: "/auth/login",
   });
+};
+
+export const admin = async () => {
+  try {
+    const user = await getUser();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (user.role !== UserRole.ADMIN) {
+      throw new Error("Unauthorized! Only admins can perform this action");
+    }
+
+    return { success: true, message: "User is admin" };
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
+  }
+};
+
+export const settings = async (values: z.infer<typeof settingsSchema>) => {
+  try {
+    const user = await getUser();
+
+    if (!user || !user.id) {
+      throw new Error("Unauthorized");
+    }
+
+    const isUserInDB = await getUserById(user.id);
+
+    if (!isUserInDB) {
+      throw new Error("User not found");
+    }
+
+    const validatedFields = settingsSchema.safeParse(values);
+
+    if (!validatedFields.success) {
+      throw new Error("Invalid values");
+    }
+
+    if (user.isOAuth) {
+      values.email = undefined;
+      values.password = undefined;
+      values.newPassword = undefined;
+      values.isTwoFactorEnabled = undefined;
+    }
+
+    if (values.email && values.email !== user.email) {
+      const existingUser = await getUserByEmail(values.email);
+
+      if (existingUser && existingUser.id !== user.id) {
+        throw new Error("Email already in use");
+      }
+
+      const verificatonToken = await generateVerificationToken(values.email);
+
+      if (!verificatonToken) {
+        throw new Error("Failed to generate verification token");
+      }
+
+      await sendVerificationEmail(values.email, verificatonToken?.token);
+
+      return { success: true, message: "Verification email sent" };
+    }
+
+    if (values.password && values.newPassword && isUserInDB.password) {
+      const isMatch = await bcrypt.compare(
+        values.password,
+        isUserInDB.password
+      );
+      if (!isMatch) {
+        throw new Error("Incorrect password");
+      }
+
+      const hashedPassword = await bcrypt.hash(values.newPassword, 10);
+
+      values.password = hashedPassword;
+
+      values.newPassword = undefined;
+    }
+
+    await db.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        ...values,
+      },
+    });
+
+    revalidatePath("/settings");
+    return { success: true, message: "Settings updated" };
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
+  }
+};
+
+export const getAccountById = async (id: string) => {
+  try {
+    const account = await db.account.findFirst({
+      where: {
+        userId: id,
+      },
+    });
+    return account;
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : "Unknown error");
+  }
 };

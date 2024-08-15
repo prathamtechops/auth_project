@@ -1,3 +1,4 @@
+"use client";
 import { logout } from "@/lib/action/auth.action";
 import React from "react";
 

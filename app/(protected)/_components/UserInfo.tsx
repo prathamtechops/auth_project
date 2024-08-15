@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ExtendedUser } from "@/next-auth";
 
@@ -8,9 +9,9 @@ interface UserInfoProps {
 
 const UserInfo = ({ user, label }: UserInfoProps) => {
   return (
-    <Card className="w-[600px] shadow-md">
+    <Card className="w-[600px] rounded-xl border-2 border-slate-800  shadow-2xl">
       <CardHeader>
-        <p className="text-center text-2xl font-semibold">{label}</p>
+        <p className="gradient-header text-center">{label}</p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
@@ -39,9 +40,11 @@ const UserInfo = ({ user, label }: UserInfoProps) => {
         </div>
         <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
           <p className="text-sm font-medium">2FA</p>
-          <p className="max-w-[180px] truncate  rounded-md bg-slate-800 p-1 font-mono text-sm">
+          {/* <p className="max-w-[180px] truncate  rounded-md bg-slate-800 p-1 font-mono text-sm"> */}
+          <Badge variant={user?.isTwoFactorEnabled ? "success" : "destructive"}>
             {user?.isTwoFactorEnabled ? "ON" : "OFF"}
-          </p>
+          </Badge>
+          {/* </p> */}
         </div>
       </CardContent>
     </Card>

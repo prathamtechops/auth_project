@@ -4,12 +4,15 @@ import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 
 import { DEFAULT_LOGIN_ROUTE } from "@/routes";
+import { useSearchParams } from "next/navigation";
 import { Button } from "./ui/button";
 
 const SocialButtons = () => {
+  const searchParams = useSearchParams();
+  const callback = searchParams.get("callback");
   const onClick = (provider: "google" | "github") => {
     signIn(provider, {
-      callbackUrl: DEFAULT_LOGIN_ROUTE,
+      callbackUrl: callback || DEFAULT_LOGIN_ROUTE,
     });
   };
 

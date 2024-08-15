@@ -1,5 +1,5 @@
 import LogoutButton from "@/app/(protected)/_components/LogoutButton";
-import useUser from "@/lib/hook/getUser";
+import getUser from "@/lib/getCurrentUser";
 import { AvatarImage } from "@radix-ui/react-avatar";
 import { FaUser } from "react-icons/fa";
 import { RxExit } from "react-icons/rx";
@@ -11,8 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-const UserButton = () => {
-  const user = useUser();
+const UserButton = async () => {
+  const user = await getUser();
 
   return (
     <DropdownMenu>
